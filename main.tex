@@ -1,0 +1,240 @@
+\documentclass[12pt,reqno]{amsart}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\allowdisplaybreaks
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage[style=alphabetic]{biblatex}
+\addbibresource{references.bib}
+\renewbibmacro{in:}{}
+\usepackage{relsize}
+\usepackage{multicol}
+\usepackage{xcolor}
+\usepackage{sectsty}
+\usepackage{tikz-cd}
+\usepackage{tikz}
+\usepackage{tabularx}
+\usepackage[hidelinks]{hyperref}
+\usepackage[nameinlink]{cleveref}
+\usepackage{aliascnt}
+\usepackage{enumitem}
+\usepackage{mathrsfs}
+\usepackage{tensor}
+\usepackage{microtype}
+\usepackage{setspace}
+\usepackage{lmodern}
+\sectionfont{\fontsize{14}{16}\selectfont}
+\geometry{letterpaper}
+
+\title{ZK Email Notebook}
+\author{Carson Connard}
+\date{August 2026}
+
+\usepackage{mathrsfs}
+
+\newcommand{\aut}{\mbox{Aut}}
+\newcommand{\im}{\text{im}\,}
+\newcommand{\id}{\mbox{id}}
+\newcommand{\tr}{\mbox{tr}}
+
+\newcommand{\mat}[4]{
+\begin{pmatrix}
+#1 & #2 \\
+#3 & #4 \\  
+\end{pmatrix}
+}
+
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}[section]
+
+\newaliascnt{theorem}{defn}
+\newtheorem{theorem}[theorem]{Theorem}
+\aliascntresetthe{theorem}
+
+\newaliascnt{ex}{defn}
+\newtheorem{ex}[ex]{Example}
+\aliascntresetthe{ex}
+
+\newaliascnt{lemma}{defn}
+\newtheorem{lemma}[lemma]{Lemma}
+\aliascntresetthe{lemma}
+
+\newaliascnt{prop}{defn}
+\newtheorem{prop}[prop]{Proposition}
+\aliascntresetthe{prop}
+
+\newaliascnt{corollary}{defn}
+\newtheorem{corollary}[corollary]{Corollary}
+\aliascntresetthe{corollary}
+
+\newtheorem*{theorem*}{Theorem}
+
+\crefname{theorem}{theorem}{theorems}
+\Crefname{theorem}{Theorem}{Theorems}
+\crefname{prop}{proposition}{propositions}
+\Crefname{prop}{Proposition}{Propositions}
+\crefname{defn}{definition}{definitions}
+\Crefname{defn}{Definition}{Definitions}
+\crefname{ex}{example}{examples}
+\Crefname{ex}{Example}{Examples}
+\crefname{corollary}{corollary}{corollaries}
+\Crefname{corollary}{Corollary}{Corollaries}
+\crefname{lemma}{lemma}{lemmas}
+\Crefname{lemma}{Lemma}{Lemmas}
+
+\newenvironment{subproof}
+  {\begin{list}{}{\leftmargin=2em}
+   \item \textit{Proof.} }
+  {\hfill$\diamond$
+   \end{list}}
+
+\newcommand{\bbN}{{\mathbb{N}}}
+\newcommand{\bbQ}{{\mathbb{Q}}}
+\newcommand{\bbR}{{\mathbb{R}}}
+\newcommand{\bbC}{{\mathbb{C}}}
+\newcommand{\bbZ}{{\mathbb{Z}}}
+\newcommand{\bbF}{\mathbb{F}}
+\newcommand{\bbH}{\mathbb{H}}
+ 
+\newcommand{\cJ}{{\mathcal J}}
+\newcommand{\cK}{{\mathcal K}}
+\newcommand{\cZ}{{\mathcal Z}}
+\newcommand{\cB}{{\mathcal B}}
+\newcommand{\cH}{{\mathcal H}}
+\newcommand{\cO}{\mathcal{O}}
+\newcommand{\cM}{\mathcal{M}}
+\newcommand{\cL}{\mathcal{L}}
+\newcommand{\cP}{{\mathcal{P}}}
+\newcommand{\cN}{\mathcal{N}}
+\newcommand{\cS}{\mathcal{S}}
+\newcommand{\cR}{\mathcal{R}}
+\newcommand{\cX}{\mathcal{X}}
+\newcommand{\cT}{\mathcal{T}}
+
+\newcommand{\sX}{\mathscr{X}}
+
+\newcommand{\bp}{{\bar{p}}}
+\newcommand{\bq}{{\bar{q}}}
+\newcommand{\br}{{\bar{r}}}
+\newcommand{\bm}{\mathbf{m}}
+
+\newcommand{\syl}{\mbox{Syl}}
+\newcommand{\normal}{\unlhd}
+\renewcommand{\char}{\text{char}}
+\newcommand{\sd}{\rtimes}
+\newcommand{\rk}{\text{rk}\,}
+\renewcommand{\mod}{\text{ mod }}
+\newcommand{\rad}{\mbox{rad}~}
+\newcommand{\Ann}{\mbox{Ann}}
+\newcommand{\End}{\mbox{End}}
+\newcommand{\tor}{\mbox{Tor}}
+\newcommand{\Mod}{\mathbf{Mod}}
+\newcommand{\coker}{\mbox{coker}\,}
+\newcommand{\codim}{\mbox{codim}\,}
+\newcommand{\ind}{\mbox{ind}}
+\newcommand{\crit}{\text{Crit}}
+\newcommand{\acts}{\curvearrowright}
+\newcommand{\morb}{\mathcal{M}^{\text{orb}}}
+\newcommand{\str}{\text{str}}
+\DeclareMathOperator{\supp}{\text{supp}}
+\newcommand{\II}{\mathrm{I\!I}}
+\newcommand{\pd}[2]{\frac{\partial #1}{\partial #2}}
+\renewcommand{\top}{\textbf{Top}}
+\newcommand{\ob}{\text{Ob}}
+\newcommand{\Set}{\textbf{Set}}
+\newcommand{\Grp}{\textbf{Grp}}
+\newcommand{\Ab}{\textbf{Ab}}
+\newcommand{\Lie}{\text{Lie}}
+\DeclareMathOperator{\Sym}{\text{Sym}}
+\newcommand{\dR}[2]{H_{\text{dR}}^{#1}(#2)}
+\DeclareMathOperator{\Span}{\text{span}}
+\DeclareMathOperator{\iso}{\text{Iso}}
+\DeclareMathOperator{\inj}{\text{inj}}
+\DeclareMathOperator{\ric}{\text{Ric}}
+\DeclareMathOperator{\Rm}{\text{Rm}}
+\DeclareMathOperator{\hess}{\text{Hess}}
+\DeclareMathOperator{\hol}{\text{Hol}}
+
+
+\let\div\relax
+\DeclareMathOperator{\div}{div}
+\DeclareMathOperator{\curl}{curl}
+
+\let\temp\phi
+\let\phi\varphi
+\let\varphi\temp
+\let\temptwo\epsilon
+\let\epsilon\varepsilon
+\let\varepsilon\temptwo
+
+\begin{document}
+
+\setcounter{tocdepth}{1}
+\maketitle
+% \tableofcontents
+
+% \setstretch{1.1}
+
+
+\begin{abstract}
+    This document serves as my personal notes for the ZK Email technology, allowing one to cryptographically prove \textit{details} from emails using zero-knowledge proofs, all without revealing the entire message content/private data as would be the case in DKIM/RSA. 
+\end{abstract}
+
+\section{Motivation and Baseline Technologies}
+
+Suppose I want to prove to someone that I am a student at UW. One of the easiest ways I could do this is to show that I have the email \verb|****@uw.edu|. An easy way to transmit this information would be to just forward the email -- however, assuming that for this specific use case I cannot think of anything better to do, forwarding this email would also expose the contents of this potentially private email, that I am just using to prove my enrollment as a student. ZK Email provides a way to prove a specific fact from the email while hiding the rest of it, in such a way that there is no intermediary ``checker;'' this exchange of information happens directly between interested parties.
+
+\subsection{DKIM} The current protocol for email security is DKIM with signatured produced by RSA. DKIM adds a hidden signature to outgoing messages, which allow receiving servers to verify that the email came from the stated domain and was not changed or spoofed during transmission. DKIM verification works by three main steps, which will be explained in detail. First, the email provider uses a secret key to sign each outgoing message. Second, you publish a ``matching'' public key in the domain's public DNS records. Third, the recipient server retrieves the public key and uses this to check the signature, which is up to integer conversion and modular multiplication determined from the hash; if there is a ``match,'' then the email is verified. 
+
+DKIM relies on the RSA cryptosystem. The aforementioned ``matching'' is not equality, rather algebraic congruence; the private key acts as a secret parameter for a permutation, while the public key provides the modulus and public exponent to invert or verify the permutation. In particular, RSA uses the following process.
+
+\begin{enumerate}[label=\arabic*.]
+    \item Key Generation. The sender server generates two distinct, large secret primes $p,q$, and computes their modulus $n=pq$. This modulus is published publicly, and its bit length determines the security level. One can then compute the totient $\phi(n)=(p-1)(q-1)$, and choose some positive $e\in\bbZ$ with $(e,\phi(n))=1$ (note that it is usually efficient in modern systems to fix $e=65537=2^{16}+1$ for performance reasons). We can now compute the secret multiplicative inverse $d\in \bbZ/\phi(n)\bbZ$, that is $d$ such that $ed\equiv 1 \mod \phi(n)$. We have constructed two pieces of information:
+    \begin{align*}
+        \text{Public Key: }(e,n),\qquad\text{Private Key: }(d,n).
+    \end{align*} The public key is published in the sender domain's DNS, and the private is kept secret on the sending server. 
+    \item Signing. When an email is sent, DKIM computes two separate hashes. First, the body of the email is hashed to some value $b_h$; this is base64-encoded and gets written to the \verb|bh=| tag of the \texttt{DKIM-Signature} header. Nothing has been signed yet, \verb|bh=| is just a field recording the hashed body. Second, the server assembles the header set (to, from, subject, etc.) to be signed, which are named in the \verb|h=| tag, together with the \texttt{DKIM-Signature} header itself, with its \verb|b=| field emptied (a header cannot contain its own signature). We hash this collection to some value $H$. This hash $H$ is a fixed length string which we can regard as an integer, and it is not directly signed; however since the \verb|bh=| field lies inside of the collection of headers, $H$ depends on the body.
+
+    Notice that RSA is pretty malleable -- since $x\mapsto x^d$ is a homomorphism on $(\bbZ/n\bbZ)^\times$, the raw RSA signatures inherit multiplicativity of the group:
+    \begin{align*}
+        S_1S_2\equiv H_1^dH_2^d\equiv (H_1H_2)^d\mod n.
+    \end{align*} This is exploitable though -- if someone had signatures on values of their choosing could forge a signature on a target $H$ by a process called \textit{blinding}: choose random $r$, request a signature on $Hr^e$, receive
+    \begin{align*}
+        (Hr^e)^d\equiv H^dr^{ed}\equiv H^dr\mod n,
+    \end{align*} and divide by $r$ to get $H^d$, which is a valid signature on a value never submitted. 
+
+    In order to avoid blinding
+    
+    the server hashes the email headers and body to create some fixed-length string. This is then converted into some large $M\in \bbZ$ such that $0<M<n$. The sending server applies the private key exponent $d$ to create the digital signature $S\equiv M^d\mod n$. This is a Base 64 integer and appended to the email header as the body hash \verb|bh=| and signature \verb|b=| tags within the \texttt{DKIM-Signature} header.
+    \item Verification. The recipient server fetches the public key $(e,n)$ from the DNS record. From the header, it extracts the signature $S$ and computes the modular exponentiation $M'\equiv S^e\mod n$. We claim that $M'=M$, that is, $z\mapsto x^{ed}$ is the identity on $\bbZ/n\bbZ$. Since $ed\equiv 1\mod\phi(n)$ there exists $k\in \bbZ$ so that $ed=1+k\phi(n)$. If $(M,n)=1$, then Euler's theorem gives $M^{\phi(n)}\equiv 1\mod n$, hence
+    \begin{align*}
+        M'\equiv (M^d)^e\equiv M^{ed}\equiv M^{1+k\phi(n)}\equiv M(M^{\phi(n)})^k\equiv M(1)^k\equiv M\mod n.
+    \end{align*} 
+    
+    However, this argument only covers $M\in(\bbZ/n\bbZ)^\times$ since Euler's theorem applies only to units. Since $M$ is derived from a hash and $n=pq$ has only two nontrivial divisors $p$ and $q$, the non-unit case occurs very rarely. However, we are still able to make it work. Recall that the Chinese Remainder Theorem yields a ring isomorphism $\eta:\bbZ/n\bbZ\to\bbZ/p\bbZ\times\bbZ/q\bbZ$ defined by $x\mapsto(x\mod p,x\mod q)$, and so it suffices to verify that $M^{ed}=M$ in each coordinate. 
+
+    Working modulo $p$, if $p|M$ then both $M^{ed}\equiv M\equiv0\mod p$ and the congruence is immediate. Otherwise suppose $(M,p)=1$; Fermat's little theorem gives $M^{p-1}\equiv1\mod p$. Since $\phi(n)=(p-1)(q-1)$ and $ed\equiv1\mod\phi(n)$, we can write
+    \begin{align*}
+        M^{ed}\equiv M^{1+k(p-1)(q-1)}\equiv M(M^{p-1})^{k(q-1)}\equiv M\mod p.
+    \end{align*} We can repeat the argument working modulo $q$ to get that $M^{ed}\equiv M\mod q$. Hence $M^{ed}$ and $M$ agree in both coordinates of the isomorphism $\eta$, and the injectivity of $\eta$ gives $M^{ed}\equiv M\mod n$.
+
+    Having recovered that $M'=M$, the server independently recomputes the hash of the received headers and compared it against $M'$; if the two agree, then the signature is verified.
+\end{enumerate}
+
+
+Notice, of course, that the \textit{entire} message is hashed and converted to $M\in \bbZ$ to be compared against. 
+
+
+
+
+
+
+
+
+
+
+
+
+\end{document}
