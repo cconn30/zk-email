@@ -205,7 +205,18 @@ DKIM relies on the RSA cryptosystem. The aforementioned ``matching'' is not equa
         (Hr^e)^d\equiv H^dr^{ed}\equiv H^dr\mod n,
     \end{align*} and divide by $r$ to get $H^d$, which is a valid signature on a value never submitted. 
 
-    In order to avoid blinding
+    As an example of this phenomenon, suppose there exists some service that signs documents for anyone, except it will refuse to sign any document with hash $\tilde H$, saying something like ``Carson owes Hudson \$1,000,000.'' Surely Hudson would like this signature. Under raw RSA, Hudson can do the following:
+    \begin{enumerate}[label=\roman*.]
+        \item Hudson picks a random $r$ such that $(r,n)=1$ and computes $r^e\mod n$. Since $e$ and $n$ are public, this is doable. 
+        \item Then Hudson submits $H'=\tilde H r^e\mod n$ for signing. Since $r$ was taken randomly, $H'$ is a uniformly random looking element of $\bbZ/n\bbZ$, and it bears no visible relation to $\tilde H$, and so the service is unable to refuse to sign this. 
+        \item The signing service then returns $S'\equiv (H')^d\equiv(\tilde H r^e)^d\mod n$. 
+        \item Hudson can then do some arithmetic: since $r^{ed}\equiv r$,
+        \begin{align*}
+            S'\equiv (\tilde H)^d r^{ed}=(\tilde H)^dr\mod n.
+        \end{align*} Hudson can then multiply by $r^{-1}\mod n$ and obtain $S=(\tilde H)^d$, which is a valid signature on the document, since $((\tilde H)^d)^e\equiv (\tilde H)^{ed}\equiv\tilde H$.
+    \end{enumerate}
+
+    In order to avoid blinding, we can embed the hash $H$ into a rigidly formatted string $M=\mu(H)$, where $\mu$ is some injective
     
     the server hashes the email headers and body to create some fixed-length string. This is then converted into some large $M\in \bbZ$ such that $0<M<n$. The sending server applies the private key exponent $d$ to create the digital signature $S\equiv M^d\mod n$. This is a Base 64 integer and appended to the email header as the body hash \verb|bh=| and signature \verb|b=| tags within the \texttt{DKIM-Signature} header.
     \item Verification. The recipient server fetches the public key $(e,n)$ from the DNS record. From the header, it extracts the signature $S$ and computes the modular exponentiation $M'\equiv S^e\mod n$. We claim that $M'=M$, that is, $z\mapsto x^{ed}$ is the identity on $\bbZ/n\bbZ$. Since $ed\equiv 1\mod\phi(n)$ there exists $k\in \bbZ$ so that $ed=1+k\phi(n)$. If $(M,n)=1$, then Euler's theorem gives $M^{\phi(n)}\equiv 1\mod n$, hence
