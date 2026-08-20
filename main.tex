@@ -157,6 +157,13 @@
 \DeclareMathOperator{\hess}{\text{Hess}}
 \DeclareMathOperator{\hol}{\text{Hol}}
 
+\newcommand{\sha}{\mathrm{SHA256}}
+\newcommand{\canon}{\mathrm{canon}}
+\newcommand{\Field}{\mathsf{Field}}
+\newcommand{\Null}{\mathsf{Null}}
+\newcommand{\Setup}{\mathsf{Setup}}
+\newcommand{\Prove}{\mathsf{Prove}}
+\newcommand{\Verify}{\mathsf{Verify}}
 
 \let\div\relax
 \DeclareMathOperator{\div}{div}
@@ -184,18 +191,18 @@
 
 \section{Motivation and Baseline Technologies}
 
-Suppose I want to prove to someone that I am a student at UW. One of the easiest ways I could do this is to show that I have the email \verb|****@uw.edu|. An easy way to transmit this information would be to just forward the email -- however, assuming that for this specific use case I cannot think of anything better to do, forwarding this email would also expose the contents of this potentially private email, that I am just using to prove my enrollment as a student. ZK Email provides a way to prove a specific fact from the email while hiding the rest of it, in such a way that there is no intermediary ``checker;'' this exchange of information happens directly between interested parties.
+Suppose I want to prove to my friend Cameron that I am a student at UW. One of the easiest ways I could do this is to show that I have the email \verb|****@uw.edu|. An easy way to transmit this information would be to just forward the email -- however, assuming that for this specific use case I cannot think of anything better to do, forwarding this email would also expose the contents of this potentially private email, that I am just using to prove my enrollment as a student. ZK Email provides a way to prove a specific fact from the email while hiding the rest of it, in such a way that there is no intermediary ``checker;'' this exchange of information happens directly between interested parties.
 
-\subsection{DKIM} The current protocol for email security is DKIM with signatured produced by RSA. DKIM adds a hidden signature to outgoing messages, which allow receiving servers to verify that the email came from the stated domain and was not changed or spoofed during transmission. DKIM verification works by three main steps, which will be explained in detail. First, the email provider uses a secret key to sign each outgoing message. Second, you publish a ``matching'' public key in the domain's public DNS records. Third, the recipient server retrieves the public key and uses this to check the signature, which is up to integer conversion and modular multiplication determined from the hash; if there is a ``match,'' then the email is verified. 
+\subsection{DKIM} The current protocol for email security is DKIM with signatures produced by RSA. DKIM adds a hidden signature to outgoing messages, which allow receiving servers to verify that the email came from the stated domain and was not changed or spoofed during transmission. DKIM verification works by three main steps, which will be explained in detail. First, the email provider uses a secret key to sign each outgoing message. Second, you publish a ``matching'' public key in the domain's public DNS records. Third, the recipient server retrieves the public key and uses this to check the signature, which is up to integer conversion and modular multiplication determined from the hash; if there is a ``match,'' then the email is verified. 
 
 DKIM relies on the RSA cryptosystem. The aforementioned ``matching'' is not equality, rather algebraic congruence; the private key acts as a secret parameter for a permutation, while the public key provides the modulus and public exponent to invert or verify the permutation. In particular, RSA uses the following process.
 
 \begin{enumerate}[label=\arabic*.]
-    \item Key Generation. The sender server generates two distinct, large secret primes $p,q$, and computes their modulus $n=pq$. This modulus is published publicly, and its bit length determines the security level. One can then compute the totient $\phi(n)=(p-1)(q-1)$, and choose some positive $e\in\bbZ$ with $(e,\phi(n))=1$ (note that it is usually efficient in modern systems to fix $e=65537=2^{16}+1$ for performance reasons). We can now compute the secret multiplicative inverse $d\in \bbZ/\phi(n)\bbZ$, that is $d$ such that $ed\equiv 1 \mod \phi(n)$. We have constructed two pieces of information:
+    \item Key Generation. The sender server generates two distinct, large secret primes $p,q$, and computes their modulus $n=pq$. This modulus is published publicly, and its bit length determines the security level. One can then compute the totient $\phi(n)=(p-1)(q-1)$, and choose some positive $e\in\bbZ$ less than $\phi(n)$ with $(e,\phi(n))=1$ (note that it is usually efficient in modern systems to fix $e=65537=2^{16}+1$ for performance reasons). We can now compute the secret multiplicative inverse $d\in \bbZ/\phi(n)\bbZ$, that is $d$ such that $ed\equiv 1 \mod \phi(n)$. We have constructed two pieces of information:
     \begin{align*}
         \text{Public Key: }(e,n),\qquad\text{Private Key: }(d,n).
     \end{align*} The public key is published in the sender domain's DNS, and the private is kept secret on the sending server. 
-    \item Signing. When an email is sent, DKIM computes two separate hashes. First, the body of the email is hashed to some value $b_h$; this is base64-encoded and gets written to the \verb|bh=| tag of the \texttt{DKIM-Signature} header. Nothing has been signed yet, \verb|bh=| is just a field recording the hashed body. Second, the server assembles the header set (to, from, subject, etc.) to be signed, which are named in the \verb|h=| tag, together with the \texttt{DKIM-Signature} header itself, with its \verb|b=| field emptied (a header cannot contain its own signature). We hash this collection to some value $H$. This hash $H$ is a fixed length string which we can regard as an integer, and it is not directly signed; however since the \verb|bh=| field lies inside of the collection of headers, $H$ depends on the body.
+    \item Signing. When an email is sent, DKIM computes two separate hashes. First, the body of the email is hashed to some value $b_h$; this is 256 bits and gets written to the \verb|bh=| tag of the \texttt{DKIM-Signature} header. Nothing has been signed yet, \verb|bh=| is just a field recording the hashed body. Second, the server assembles the header set (to, from, subject, etc.) to be signed, which are named in the \verb|h=| tag, together with the \texttt{DKIM-Signature} header itself, with its \verb|b=| field emptied (a header cannot contain its own signature). We hash this collection to some value $H$. This hash $H$ is a fixed length string which we can regard as an integer, and it is not directly signed; however since the \verb|bh=| field lies inside of the collection of headers, $H$ depends on the body.
 
     Notice that RSA is pretty malleable -- since $x\mapsto x^d$ is a homomorphism on $(\bbZ/n\bbZ)^\times$, the raw RSA signatures inherit multiplicativity of the group:
     \begin{align*}
@@ -216,9 +223,14 @@ DKIM relies on the RSA cryptosystem. The aforementioned ``matching'' is not equa
         \end{align*} Hudson can then multiply by $r^{-1}\mod n$ and obtain $S=(\tilde H)^d$, which is a valid signature on the document, since $((\tilde H)^d)^e\equiv (\tilde H)^{ed}\equiv\tilde H$.
     \end{enumerate}
 
-    In order to avoid blinding, we can embed the hash $H$ into a rigidly formatted string $M=\mu(H)$, where $\mu$ is some injective
-    
-    the server hashes the email headers and body to create some fixed-length string. This is then converted into some large $M\in \bbZ$ such that $0<M<n$. The sending server applies the private key exponent $d$ to create the digital signature $S\equiv M^d\mod n$. This is a Base 64 integer and appended to the email header as the body hash \verb|bh=| and signature \verb|b=| tags within the \texttt{DKIM-Signature} header.
+    In order to avoid blinding, we want to \textit{pad} the hash. That is, we want to sign the image $M=\mu(H)$ under an injective \textit{padding map} $\mu:\{\text{hash values}\}\to[0,n)$. This map is designed so that the image is a very small and multiplicatively unstructured subset of $[0,n)$; concretely, $\mu$ injects $H$ into the low-order digits of a long integer whose leading digits are fixed at some prescribed pattern. Every padded value therefore had identical higher order digits, and so
+    \begin{align*}
+        \cM:=\mu(\{\text{hash values}\})\subset[a,a+2^{256})
+    \end{align*} for some fixed $a$ close to $n$. The image lies inside a single subinterval of width $2^{256}$ within a range of width of around $2^{2048}$ ($n$ is 2048-bit integer), and so multiplying two such elements produces a number near $a^2>n$, which upon reduction modulo $n$ falls almost uniformly in $[0,n)$, thus escaping the narrow window with high probability. The same holds for the blinded value $\mu(\tilde H)r^e$.
+
+    The multiplicative structure of $(\bbZ/n\bbZ)^\times$ has not been removed, rather the set of legitimately signable values is no longer closed under multiplication. A verifier checks that the recovered integer lies in $\cM$ (the leading digits match prescribed pattern), and rejects before the hash is even compared if not -- that is, products and blinded values fail this test immediately. 
+
+    Now the server applies its private exponent $d$ to get $S\equiv M^d\mod n$, and records $S$ in the \verb|b=| field of the \texttt{DKIM-Signature} header. The body never entered the signed hash; it is bound to the signature only transitively, so integrity is enforced by two independent checks chained together rather than a single hash.
     \item Verification. The recipient server fetches the public key $(e,n)$ from the DNS record. From the header, it extracts the signature $S$ and computes the modular exponentiation $M'\equiv S^e\mod n$. We claim that $M'=M$, that is, $z\mapsto x^{ed}$ is the identity on $\bbZ/n\bbZ$. Since $ed\equiv 1\mod\phi(n)$ there exists $k\in \bbZ$ so that $ed=1+k\phi(n)$. If $(M,n)=1$, then Euler's theorem gives $M^{\phi(n)}\equiv 1\mod n$, hence
     \begin{align*}
         M'\equiv (M^d)^e\equiv M^{ed}\equiv M^{1+k\phi(n)}\equiv M(M^{\phi(n)})^k\equiv M(1)^k\equiv M\mod n.
@@ -231,16 +243,290 @@ DKIM relies on the RSA cryptosystem. The aforementioned ``matching'' is not equa
         M^{ed}\equiv M^{1+k(p-1)(q-1)}\equiv M(M^{p-1})^{k(q-1)}\equiv M\mod p.
     \end{align*} We can repeat the argument working modulo $q$ to get that $M^{ed}\equiv M\mod q$. Hence $M^{ed}$ and $M$ agree in both coordinates of the isomorphism $\eta$, and the injectivity of $\eta$ gives $M^{ed}\equiv M\mod n$.
 
-    Having recovered that $M'=M$, the server independently recomputes the hash of the received headers and compared it against $M'$; if the two agree, then the signature is verified.
+    Having recovered that $M'=M$, the server independently recovers the signed hash. It first checks that $M'\in \cM$, that is, its leading digits match the prescribed pattern and rejects immediately if not (this is the check that defeats products and blinded values as discussed earlier). If this check is passed, then the padding is stripped away by the injectivity of $\mu$, yielding a hash value $H'$ with $\mu(H')=M'$.
+
+    We have two comparisons that remain, corresponding to the two hashes computed during signing. First, the server assembles the same header set from the received message, hashes it, and checks that SHA(headers)$=H'$. This certifies that the headers are exactly those that the sending domain signed. Second, the server hashes the received body and checks it against the value in the \verb|bh=| tag of the header: that is, it checks SHA256(body)$=b_h$. This certifies that the body is the same as it was when it was signed. 
+
+    The email is verified only if both of these checks succeed. Since $b_h$ lives inside the signed header set, tampering with the body forces a mismatch in the second check, while tampering with $b_h$ to compensate forces a mismatch in the first check.
 \end{enumerate}
 
 
-Notice, of course, that the \textit{entire} message is hashed and converted to $M\in \bbZ$ to be compared against. 
+\subsection{Goals for Improvement upon DKIM}
 
 
+The above process leaves us with a motivating question: \textit{what information does DKIM verification force you to hand over, but how much of it, if any, is necessary?} The DKIM protocol is secure and gives us a certificate of provenance, and a valid signature certifies that the message was produced by the server it was sent from. But the obstruction is that DKIM requires \textit{everything}. To check that $S^e=M$, the verifier had to recompute SHA256(headers) as well as SHA256(body); both of these computations require the plaintext of the message in full. Exhibiting the evidence and disclosing the message are the same act, and this is not ideal.
+
+Instead, we return to the earlier question of wanting to show that my email is of the form \verb|****@uw.edu|. Under DKIM, I can either forward an entire email, disclosing everything in that email, or I can route it through some third party who reads the message, verifies the signature, and vouches on my behalf, but there are obvious shortfalls to this approach -- regardless, \textit{someone} has to read the email.
+
+What we want is to separate two things that are fused in DKIM. First, the \textit{existence} of a valid signature, and second the \textit{data} over which it was computed. Concretely, I want to show Cameron that there exists an email address bearing a valid DKIM signature from \verb|uw.edu|, whose \verb|From| field ends in \verb|@uw.edu|, and I possess it, while revealing nothing else (not even which specific address is mine!).
 
 
+\section{Statement}
 
+ 
+I want to convince Cameron that I hold an email carrying a valid DKIM signature from \texttt{uw.edu} whose \texttt{From} field ends in \texttt{@uw.edu}, while revealing nothing else. This section is dedicated to converting this goal to a mathematical object.
+ 
+Once this goal is written as a relation, the design of the entire system reduces to a single decision -- namely, \emph{which data are placed on the instance side and which on the witness side?} Everything the verifier learns is exactly what sits in the instance; everything hidden is exactly what sits in the witness. The separation that Section 1.2 described as ``decoupling the existence of a valid signature from the data over
+which it was computed'' is precisely the act of moving the message to the witness while leaving the verification equation on the instance.
+ 
+\subsection{Preliminaries and notation}
+ 
+Let $\Sigma = \{0,1,\dots,255\}$ denote the byte alphabet and $\Sigma^{*}$ the
+set of finite byte strings. We write $\sha : \Sigma^{*} \to \Sigma^{32}$ for
+SHA-256, and we identify $\Sigma^{32}$ with the integers in
+$[0, 2^{256})$ via big-endian encoding, as we did in Section 1.1 when regarding
+the hash $H$ as an integer.
+ 
+Fix a domain $D$ (for us, $D = \texttt{uw.edu}$) together with a DKIM selector, and let $K=(e, n)$ be the RSA public key published in the DNS record for that selector and domain, with $n$ a $2048$-bit modulus. Let $\mu$ denote the PKCS\#1 v1.5 map, that is the injective padding map of Section 1.1 that we referenced without name, and let $\cM :=\mu(\Sigma^{32}) \subset [0,n)$ be its image, the set of legitimately signable integers.
+ 
+Two features of the DKIM protocol that were suppressed in Section 1.1 must now be made explicit, because they are precisely the features that a circuit is obliged to reproduce. Note that for a fixed prime $p$ and working over $\bbF_p$, we define a \textit{circuit} to be a finite system of polynomial equations over $\bbF_p$ in two groups of variables: the public variables $x$ (the instance), and the private variables $w$ (the witness). To ``satisfy the circuit,'' we want to exhibit an assignment satisfying every equation.
+ 
+\medskip
+\noindent\textbf{Canonicalization.} DKIM does not sign the raw bytes of a message. It signs the image of the message under a normalization procedure, declared in the \texttt{c=} tag of the \texttt{DKIM-Signature} header. Let us define
+\[
+  \canon_{h} : \Sigma^{*} \to \Sigma^{*}, \qquad
+  \canon_{b} : \Sigma^{*} \to \Sigma^{*}
+\]
+to be the header and body canonicalization maps respectively. In the \texttt{relaxed/relaxed} mode used by essentially every major provider, $\canon_{h}$ lowercases header field names, collapses runs of whitespace, and
+strips leading and trailing whitespace from field values; similarly $\canon_{b}$ collapses whitespace within lines and removes trailing empty lines. Neither map is injective, and neither is the identity. Every occurrence of $\sha$ below is therefore applied to a canonicalized argument, and a verifier --- whether a mail
+server or an arithmetic circuit --- that hashes the raw bytes will simply fail.
+ 
+\medskip
+\noindent\textbf{Bounded strings.} An arithmetic circuit is a fixed system of
+constraints over a finite field; it has no loops of data-dependent length and no
+arrays of data-dependent size. Consequently every string appearing in the
+statement below must be represented at a length fixed at compile time. We adopt
+the following convention. For a bound $L$ with $64 \mid L$, a
+\emph{bounded string of capacity $L$} is a pair
+\[
+  \sigma = (\vec{\sigma}, \ell), \qquad \vec{\sigma} \in \Sigma^{L}, \quad
+  0 \le \ell \le L,
+\]
+subject to the padding condition
+\[
+  \vec{\sigma}[j] = 0 \quad \text{for all } j \ge \ell. \tag{$\star$}
+\]
+We write $\Sigma^{\le L}$ for the set of such pairs and regard $\sigma$ as
+denoting the string $\vec{\sigma}[0..\ell)$. The divisibility $64 \mid L$ is
+imposed because SHA-256 consumes its input in $64$-byte blocks.
+ 
+Condition $(\star)$ deserves emphasis, since it is easy to mistake for
+bookkeeping. It is a genuine soundness requirement. The length $\ell$ is supplied
+by the prover, and if the bytes beyond $\ell$ are left unconstrained then a
+malicious prover may place arbitrary content there --- content that is
+invisible to the length-respecting parts of the statement but may be visible to
+others. Enforcing $(\star)$ is what makes ``the string ends at $\ell$''
+a proved fact rather than an assertion.
+ 
+\medskip
+\noindent\textbf{Constrained field access.} The same concern arises, more
+sharply, for every extraction of a named field from the header. In ordinary code
+one searches for the substring \texttt{"from:"} and reads what follows. In a
+circuit there is no search: the prover \emph{supplies} an index and the circuit
+must constrain that the index is the right one. We therefore introduce a
+predicate
+\[
+  \Field(\sigma, i, m, v)
+\]
+which holds precisely when, inside the bounded string $\sigma$, position $i$
+begins a header field with name $m$ and value $v$, and this occurrence is
+well-formed: it is preceded by a line break (or is the start of $\sigma$), the
+name matches $m$ byte for byte, and the value $v$ runs uninterrupted to the
+terminating line break. Absent the well-formedness clauses, a prover could point
+$i$ at an arbitrary location --- for instance at the interior of an attacker-chosen
+\texttt{Subject} line containing the text \texttt{from: dean@uw.edu} --- and the
+circuit would happily read a field of the prover's own manufacture.
+ 
+\begin{remark}
+The three notions just introduced --- canonicalization, bounded strings with
+constrained padding, and constrained field access --- are the entire distance
+between the mathematics of Section 1.1 and a working implementation. Each of
+them is treated in detail in Section 4.
+\end{remark}
+ 
+\subsection{The relation}
+ 
+Fix capacities $L_{h}, L_{b}$ with $64 \mid L_{h}$ and $64 \mid L_{b}$, and fix a
+collision-resistant hash $\Nul$ suitable for use inside a circuit (in practice
+Poseidon or Pedersen rather than SHA-256, for reasons of constraint count that
+are taken up in Section 3).
+ 
+\begin{definition}[The ZK Email relation]
+\label{def:relation}
+Let $D$ be a domain. Define $\cR_{D}$ to be the set of pairs $(x, w)$ where the
+\emph{instance} is
+\[
+  x = (n,\; e,\; D,\; \nu)
+\]
+and the \emph{witness} is
+\[
+  w = \bigl(h,\; b,\; S,\; \iota\bigr),
+  \qquad h \in \Sigma^{\le L_{h}},\; b \in \Sigma^{\le L_{b}},\;
+  S \in [0, n),
+\]
+with $\iota = (i_{\mathrm{bh}}, i_{d}, i_{\mathrm{from}})$ a tuple of auxiliary
+indices, subject to the following conditions.
+ 
+\begin{enumerate}
+\item[(R1)] \emph{(Signature.)} The integer $M' := S^{e} \bmod n$ lies in
+  $\cM$, and $H := \mu^{-1}(M') \in \Sigma^{32}$.
+ 
+\item[(R2)] \emph{(Header binding.)}
+  $\sha\bigl(\canon_{h}(h)\bigr) = H$.
+ 
+\item[(R3)] \emph{(Body binding.)} There is a value $\beta \in \Sigma^{32}$ with
+  $\Field\bigl(h,\, i_{\mathrm{bh}},\, \texttt{bh},\, \mathrm{b64}(\beta)\bigr)$
+  and
+  $\sha\bigl(\canon_{b}(b)\bigr) = \beta$,
+  where $\mathrm{b64}$ denotes base-64 encoding.
+ 
+\item[(R4)] \emph{(Signer.)}
+  $\Field\bigl(h,\, i_{d},\, \texttt{d},\, D\bigr)$.
+ 
+\item[(R5)] \emph{(Claimed address.)} There is a value $a \in \Sigma^{*}$ with
+  $\Field\bigl(h,\, i_{\mathrm{from}},\, \texttt{from},\, a\bigr)$ such that the
+  address part of $a$ has $\texttt{@} \| D$ as a suffix.
+ 
+\item[(R6)] \emph{(Nullifier.)} $\nu = \Nul(S)$.
+\end{enumerate}
+We write $\cL_{D} = \{\, x : \exists\, w,\ (x,w) \in \cR_{D} \,\}$ for the
+associated language.
+\end{definition}
+ 
+Conditions (R1)--(R3) are nothing other than the three verification checks of
+Section 1.1, transcribed. (R1) is the recovery $M' \equiv S^{e}$ together with
+the membership test $M' \in \cM$ that defeats blinding; (R2) is the header
+comparison $\sha(\text{headers}) = H'$; (R3) is the body comparison
+$\sha(\text{body}) = \mathrm{bh}$, with the extra clause that the value
+$\mathrm{bh}$ must be read from a genuine \texttt{bh=} tag rather than pointed at
+by an unconstrained index. The chaining argument of Section 1.1 is unchanged:
+$\mathrm{bh}$ lives inside the signed header set, so tampering with the body
+breaks (R3) while tampering with the tag breaks (R2).
+ 
+Conditions (R4)--(R6) are new, and each is present for a reason worth stating.
+ 
+\begin{remark}[Why (R4) is not redundant]
+It is tempting to omit (R4) on the grounds that (R5) already pins the sender to
+$D$. This is wrong, and the error is instructive. DKIM's \texttt{d=} tag records
+the \emph{signing} domain; the \texttt{From} header records the \emph{claimed
+author}. DKIM itself imposes no relation between them --- aligning the two is the
+job of DMARC, a separate protocol layered on top. Without (R4), the relation is
+satisfied by any email whose \texttt{From} reads \texttt{@uw.edu} and which was
+signed by \emph{any} domain willing to sign it, including one the prover
+controls. The key $(e,n)$ appearing in the instance would then be the attacker's
+key rather than the university's, and a verifier who checked only that some
+signature verified under some key would learn nothing at all. Both conditions are
+required, and their conjunction is what makes the instance's $(n,e)$ and the
+message's claimed authorship refer to the same domain.
+\end{remark}
+ 
+\begin{remark}[Why the signature must not be revealed, and why $\nu$ exists]
+The signature $S$ is a $2048$-bit string determined by the message; it is, for
+practical purposes, a globally unique identifier for that email. Publishing $S$
+would therefore defeat the entire exercise, which is why $S$ appears in $w$ and
+not in $x$. But a proof system that reveals nothing about $S$ also gives the
+verifier no way to detect that the same email has been used twice, which matters
+whenever the proof authorizes an action that should occur once. The nullifier
+$\nu = \Nul(S)$ resolves the tension: it is a deterministic function of $S$, so
+repeated use of one email yields a repeated $\nu$ and is detectable, while
+collision resistance and the one-wayness of $\Nul$ prevent $\nu$ from betraying
+$S$. Note that $\nu$ sits in the instance --- it is public by construction, and
+linkability across proofs from the same email is an intended feature, not a leak.
+\end{remark}
+ 
+\subsection{The proof system, as a black box}
+ 
+We now record the interface we require, and nothing more. The internal machinery
+--- arithmetization, polynomial commitments, the Fiat--Shamir transform --- is
+irrelevant to everything in this document except constraint counts, and is
+deferred to the references.
+ 
+\begin{definition}
+A \emph{non-interactive zero-knowledge argument of knowledge} for a relation
+$\cR$ is a triple of algorithms $(\Setup, \Prove, \Verify)$ with
+$\Setup(1^{\lambda}) \to (\mathrm{pk}, \mathrm{vk})$,
+$\Prove(\mathrm{pk}, x, w) \to \pi$, and
+$\Verify(\mathrm{vk}, x, \pi) \to \{0,1\}$,
+satisfying:
+\begin{enumerate}
+\item[(i)] \emph{Completeness.} If $(x,w) \in \cR$ then
+  $\Verify(\mathrm{vk}, x, \Prove(\mathrm{pk}, x, w)) = 1$.
+\item[(ii)] \emph{Knowledge soundness.} For every efficient adversary producing
+  an accepting pair $(x, \pi)$ there is an efficient extractor which, given the
+  adversary's internal state, outputs $w$ with $(x,w) \in \cR$, except with
+  negligible probability.
+\item[(iii)] \emph{Zero knowledge.} There is an efficient simulator which, given
+  only $x \in \cL$, produces transcripts computationally indistinguishable from
+  those of the honest prover.
+\end{enumerate}
+\end{definition}
+ 
+Applied to $\cR_{D}$ of Definition \ref{def:relation}, these three properties
+say exactly what we want, and it is worth reading off each one in the language of
+the problem. Completeness says that a genuine holder of a genuine
+\texttt{uw.edu} email can always produce a proof Cameron accepts. Knowledge
+soundness says that a prover who produces an accepting proof must actually
+\emph{possess} such an email --- not merely know that one exists, which is the
+distinction between soundness and knowledge soundness and the reason the latter
+is the right notion here. Zero knowledge says that Cameron's view is simulable
+from $x$ alone, hence contains no information about $h$, $b$, or $S$ beyond what
+$x$ already implies.
+ 
+\begin{remark}
+Property (iii) is often over-read, and the over-reading is the source of most
+mistaken privacy claims about systems of this kind. Zero knowledge is a statement
+about the \emph{witness}; it promises that the proof leaks nothing beyond the
+instance. It promises nothing whatsoever about what the instance itself reveals.
+Since $x$ contains $n$, $e$, and $D$ in the clear, a verifier necessarily learns
+that the email came from \texttt{uw.edu}, and that fact is not a defect of the
+proof system but a consequence of the design: the verifier cannot check (R1)
+without the key, and the key identifies the domain that published it. Section 5
+takes up the resulting question --- what \emph{is} revealed, and to whom --- in
+detail.
+\end{remark}
+ 
+\subsection{What the relation does not say}
+ 
+Definition \ref{def:relation} is a precise statement, which makes it possible to
+be precise about its limits. Three deserve mention now, since each shapes what
+follows.
+ 
+\medskip
+\noindent\textbf{Possession is not ownership.} The relation certifies that the
+prover holds an email signed by $D$ whose \texttt{From} address ends in
+\texttt{@}$D$. It does not certify that the prover \emph{is} the holder of that
+address. Anyone who has ever received mail from any \texttt{uw.edu} account holds
+a witness satisfying $\cR_{\texttt{uw.edu}}$, and can produce a proof
+indistinguishable from mine. If the intended claim is ``I control an
+\texttt{@uw.edu} mailbox,'' the relation as stated is inadequate.
+ 
+The standard repair is to bind the email to a challenge. Cameron chooses a fresh
+nonce $c$ and asks me to send myself an email containing $c$; the relation is
+then extended by a condition requiring $c$ to occur in a constrained position of
+$h$ or $b$, and $c$ is moved into the instance. Since only the holder of the
+mailbox can cause $D$ to sign a message containing $c$ and reach me, possession
+of such a witness now does imply control. Note that this reintroduces
+interaction --- Cameron must speak first --- which the original formulation had
+eliminated, and that the timeliness of the guarantee is only as good as the
+freshness of $c$.
+ 
+\medskip
+\noindent\textbf{Anonymity is relative to a set.} Condition (R5) demands only a
+suffix, so the proof does not name my address. But the set of parties who could
+have produced it is exactly the set of parties holding a $D$-signed email with a
+\texttt{@}$D$ sender, and my privacy is bounded by the size of that set. Widening
+(R5) --- say, to any accredited university rather than \texttt{uw.edu} --- widens
+the anonymity set at the cost of proving a weaker claim, and the tradeoff is
+inherent rather than incidental.
+ 
+\medskip
+\noindent\textbf{The key is a trust root, and it moves.} Condition (R1) is
+stated relative to a key $(e,n)$ that appears in the instance, and the verifier
+must decide, independently of the proof, that this key is the one
+\texttt{uw.edu} genuinely published. DKIM's own answer --- query DNS --- works for
+a mail server verifying in real time and fails for a proof verified a year later
+or on a chain that cannot query DNS at all. The proof system inherits, and does
+nothing to discharge, this obligation. Section 5 returns to it.
 
 
 
